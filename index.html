@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#020617">
+  <meta name="description" content="Asistente personal para controlar finanzas, deudas y metas de ahorro.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <title>Mis finanzas</title>
+
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/svg+xml" href="./icons/icon-192.svg">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  >
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    body {
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .spatial-background {
+      background:
+        radial-gradient(circle at 15% 5%, rgba(59, 130, 246, 0.14), transparent 30%),
+        radial-gradient(circle at 85% 28%, rgba(14, 165, 233, 0.09), transparent 28%),
+        radial-gradient(circle at 50% 90%, rgba(16, 185, 129, 0.07), transparent 32%),
+        #020617;
+    }
+
+    .finax-select {
+      color-scheme: dark;
+    }
+
+    .finax-select option {
+      background: #0f172a;
+      color: #f8fafc;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+  </style>
+</head>
+
+<body class="spatial-background min-h-screen overflow-x-hidden bg-slate-950 text-white antialiased">
+  <div class="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
+    <div class="absolute -left-24 top-16 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl"></div>
+    <div class="absolute -right-24 top-72 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl"></div>
+  </div>
+
+  <div class="relative mx-auto min-h-screen w-full max-w-lg">
+    <!-- Inicio -->
+    <section id="home-view">
+      <header class="sticky top-0 z-30 border-b border-white/10 bg-white/[0.05] px-5 pb-6 pt-[max(1.25rem,env(safe-area-inset-top))] shadow-[0_16px_40px_rgba(0,0,0,0.25)] backdrop-blur-md">
+        <div class="mb-7 flex items-center justify-between">
+          <div>
+            <p class="text-xl font-semibold text-white">Hola, Alan</p>
+            <span id="header-date" class="text-sm text-slate-400"></span>
+          </div>
+
+          <button
+            id="notifications-button"
+            type="button"
+            aria-label="Notificaciones"
+            aria-controls="notifications-panel"
+            aria-expanded="false"
+            class="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-slate-300 shadow-[0_8px_24px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-md transition hover:border-blue-400/30 hover:text-white"
+          >
+            <i class="fa-regular fa-bell" aria-hidden="true"></i>
+            <span
+              id="notifications-indicator"
+              class="absolute right-2 top-2 hidden h-2.5 w-2.5 rounded-full border-2 border-slate-900 bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.85)]"
+              aria-hidden="true"
+            ></span>
+          </button>
+        </div>
+
+        <section
+          id="notifications-panel"
+          aria-label="Alertas financieras"
+          class="absolute left-5 right-5 top-[5.25rem] z-50 hidden max-h-[min(26rem,65vh)] overflow-y-auto rounded-3xl border border-white/15 bg-slate-900/90 p-4 shadow-[0_24px_65px_rgba(0,0,0,0.55),0_0_32px_rgba(59,130,246,0.08),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-2xl"
+        >
+          <div class="mb-3 flex items-center justify-between">
+            <div>
+              <p class="text-xs font-medium uppercase tracking-[0.17em] text-blue-300/70">Recordatorios</p>
+              <h2 class="mt-1 font-semibold text-white">Alertas financieras</h2>
+            </div>
+            <span id="notifications-count" class="rounded-xl border border-rose-400/20 bg-rose-400/10 px-2.5 py-1 text-xs font-semibold text-rose-300">0</span>
+          </div>
+          <div id="notifications-list" class="space-y-2" aria-live="polite"></div>
+        </section>
+
+        <section aria-labelledby="balance-title">
+          <p id="balance-title" class="text-sm font-medium text-slate-400">Saldo Total</p>
+          <p id="total-balance" class="mt-1 text-4xl font-bold tracking-tight text-white drop-shadow-[0_0_18px_rgba(96,165,250,0.18)]">
+            S/. 0.00
+          </p>
+
+          <div class="mt-5 grid grid-cols-2 gap-3">
+            <div class="rounded-2xl border border-blue-400/15 bg-blue-400/[0.08] p-3 shadow-[0_10px_30px_rgba(30,64,175,0.16),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-md">
+              <div class="flex items-center gap-2 text-xs font-medium text-blue-200/80">
+                <span class="flex h-7 w-7 items-center justify-center rounded-xl bg-blue-400/15 text-blue-300">
+                  <i class="fa-solid fa-mobile-screen-button" aria-hidden="true"></i>
+                </span>
+                Yape
+              </div>
+              <p id="yape-balance" class="mt-2 text-base font-semibold text-white">S/. 0.00</p>
+            </div>
+
+            <div class="rounded-2xl border border-emerald-400/15 bg-emerald-400/[0.07] p-3 shadow-[0_10px_30px_rgba(6,78,59,0.14),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-md">
+              <div class="flex items-center gap-2 text-xs font-medium text-emerald-200/80">
+                <span class="flex h-7 w-7 items-center justify-center rounded-xl bg-emerald-400/15 text-emerald-300">
+                  <i class="fa-solid fa-money-bill-wave" aria-hidden="true"></i>
+                </span>
+                Efectivo
+              </div>
+              <p id="cash-balance" class="mt-2 text-base font-semibold text-white">S/. 0.00</p>
+            </div>
+          </div>
+        </section>
+      </header>
+
+      <main class="px-5 pb-40 pt-7">
+        <form id="smart-transaction-form" class="mb-7" autocomplete="off">
+          <label for="smart-transaction-input" class="sr-only">Registrar movimiento con lenguaje natural</label>
+          <div class="flex h-14 items-center gap-2 rounded-2xl border border-blue-400/15 bg-white/[0.055] px-3 shadow-[0_14px_36px_rgba(0,0,0,0.24),0_0_24px_rgba(59,130,246,0.05),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl transition focus-within:border-blue-400/40 focus-within:ring-2 focus-within:ring-blue-500/10">
+            <i class="fa-solid fa-wand-magic-sparkles ml-1 text-sm text-blue-300/80" aria-hidden="true"></i>
+            <input
+              id="smart-transaction-input"
+              type="text"
+              maxlength="160"
+              enterkeyhint="send"
+              placeholder="Ej: Gasté 15 en menú con yape..."
+              class="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-slate-600"
+            >
+            <button
+              id="smart-microphone-button"
+              type="button"
+              aria-label="Dictar movimiento"
+              class="flex h-10 w-10 shrink-0 touch-manipulation items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] text-slate-400 transition hover:border-blue-400/30 hover:text-blue-300 active:scale-95"
+            >
+              <i class="fa-solid fa-microphone" aria-hidden="true"></i>
+            </button>
+            <button
+              id="smart-transaction-submit"
+              type="submit"
+              aria-label="Registrar con inteligencia artificial"
+              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-blue-300/25 bg-gradient-to-br from-blue-600 to-blue-400 text-white shadow-[0_6px_20px_rgba(59,130,246,0.28)] transition hover:brightness-110 active:scale-95"
+            >
+              <i class="fa-solid fa-arrow-up" aria-hidden="true"></i>
+            </button>
+          </div>
+        </form>
+
+        <section aria-labelledby="recent-transactions-title">
+          <div class="mb-4">
+            <p class="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">Actividad</p>
+            <h2 id="recent-transactions-title" class="mt-1 text-lg font-semibold text-white">
+              Transacciones recientes
+            </h2>
+          </div>
+
+          <div id="recent-transactions-list" class="space-y-3" aria-live="polite"></div>
+        </section>
+      </main>
+    </section>
+
+    <!-- Deudas -->
+    <section id="debts-view" class="hidden min-h-screen pb-36">
+      <header class="sticky top-0 z-30 border-b border-white/10 bg-slate-950/75 px-5 pb-5 pt-[max(1.25rem,env(safe-area-inset-top))] shadow-[0_16px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl">
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <p class="text-xs font-medium uppercase tracking-[0.18em] text-blue-300/70">Control personal</p>
+            <h1 class="mt-1 text-2xl font-bold tracking-tight text-white">Deudas y préstamos</h1>
+          </div>
+
+          <button
+            id="new-debt-button"
+            type="button"
+            class="flex h-11 items-center gap-2 rounded-2xl border border-blue-300/20 bg-blue-500/10 px-4 text-sm font-semibold text-blue-300 shadow-[0_8px_24px_rgba(59,130,246,0.12)] transition hover:bg-blue-500/15"
+          >
+            <i class="fa-solid fa-plus" aria-hidden="true"></i>
+            Nueva
+          </button>
+        </div>
+
+        <div class="mt-6 grid grid-cols-2 gap-3">
+          <div class="rounded-2xl border border-emerald-400/15 bg-emerald-400/[0.06] p-3">
+            <p class="text-xs text-emerald-200/70">Por cobrar</p>
+            <p id="receivable-debt-total" class="mt-1 font-semibold text-emerald-300">S/. 0.00</p>
+          </div>
+          <div class="rounded-2xl border border-orange-400/15 bg-orange-400/[0.06] p-3">
+            <p class="text-xs text-orange-200/70">Por pagar</p>
+            <p id="payable-debt-total" class="mt-1 font-semibold text-orange-300">S/. 0.00</p>
+          </div>
+        </div>
+      </header>
+
+      <main class="px-5 pt-6">
+        <div class="grid grid-cols-2 rounded-2xl border border-white/10 bg-white/[0.04] p-1 backdrop-blur-md">
+          <button
+            type="button"
+            data-debt-tab="receivable"
+            aria-pressed="true"
+            class="rounded-xl bg-emerald-400/10 px-3 py-3 text-sm font-semibold text-emerald-300 transition"
+          >
+            Por cobrar
+            <span id="receivable-debt-count" class="ml-1 text-xs opacity-70">0</span>
+          </button>
+          <button
+            type="button"
+            data-debt-tab="payable"
+            aria-pressed="false"
+            class="rounded-xl px-3 py-3 text-sm font-semibold text-slate-500 transition"
+          >
+            Por pagar
+            <span id="payable-debt-count" class="ml-1 text-xs opacity-70">0</span>
+          </button>
+        </div>
+
+        <div id="debts-list" class="mt-4 space-y-3" aria-live="polite"></div>
+      </main>
+    </section>
+
+    <!-- Análisis -->
+    <section id="analysis-view" class="hidden min-h-screen pb-36">
+      <header class="sticky top-0 z-30 border-b border-white/10 bg-slate-950/75 px-5 pb-5 pt-[max(1.25rem,env(safe-area-inset-top))] shadow-[0_16px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl">
+        <p class="text-xs font-medium uppercase tracking-[0.18em] text-blue-300/70">Comportamiento financiero</p>
+        <h1 class="mt-1 text-2xl font-bold tracking-tight text-white">Análisis</h1>
+      </header>
+
+      <main class="space-y-4 px-5 pt-6">
+        <div class="flex justify-end">
+          <label for="analysis-period-select" class="sr-only">Periodo del análisis</label>
+          <div class="relative">
+            <select
+              id="analysis-period-select"
+              class="finax-select h-11 appearance-none rounded-2xl border border-white/10 bg-white/[0.055] pl-4 pr-10 text-sm font-medium text-slate-200 outline-none backdrop-blur-md transition focus:border-blue-400/40"
+            >
+              <option value="current">Este mes</option>
+              <option value="previous">Mes anterior</option>
+              <option value="two-months-ago">Hace 2 meses</option>
+              <option value="history">Histórico</option>
+            </select>
+            <i class="fa-solid fa-chevron-down pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-500" aria-hidden="true"></i>
+          </div>
+        </div>
+
+        <section class="overflow-hidden rounded-3xl border border-blue-400/15 bg-white/[0.055] p-5 shadow-[0_18px_45px_rgba(0,0,0,0.28),0_0_30px_rgba(59,130,246,0.06),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-md">
+          <div class="flex items-center justify-between gap-4">
+            <div>
+              <p class="text-sm font-medium text-slate-400">Gasto Total</p>
+              <p id="analysis-expense-total" class="mt-1 text-3xl font-bold tracking-tight text-white">S/. 0.00</p>
+            </div>
+            <div class="flex h-12 w-12 items-center justify-center rounded-2xl border border-blue-400/20 bg-blue-400/10 text-blue-300">
+              <i class="fa-solid fa-chart-pie" aria-hidden="true"></i>
+            </div>
+          </div>
+        </section>
+
+        <section class="rounded-3xl border border-white/10 bg-white/[0.045] p-5 shadow-[0_18px_45px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-xl">
+          <div class="mb-4">
+            <p class="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">Distribución</p>
+            <h2 class="mt-1 text-lg font-semibold text-white">Gastos por categoría</h2>
+          </div>
+
+          <div class="relative h-72">
+            <canvas id="expense-category-chart" aria-label="Gráfico de gastos por categoría"></canvas>
+            <div id="analysis-empty-state" class="pointer-events-none absolute inset-0 flex items-center justify-center text-center">
+              <div>
+                <i class="fa-solid fa-chart-simple text-2xl text-slate-600" aria-hidden="true"></i>
+                <p class="mt-3 text-sm text-slate-500">Aún no hay gastos para analizar.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <button
+          id="analysis-ai-button"
+          type="button"
+          class="flex w-full items-center justify-center gap-2 rounded-2xl border border-blue-300/25 bg-gradient-to-br from-blue-600 to-blue-400 px-5 py-3.5 text-sm font-semibold text-white shadow-[0_10px_34px_rgba(59,130,246,0.28)] transition hover:brightness-110 active:scale-[0.98]"
+        >
+          <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+          Generar Diagnóstico IA
+        </button>
+
+        <section
+          id="analysis-ai-panel"
+          class="hidden rounded-3xl border border-blue-400/15 bg-white/[0.05] p-5 shadow-[0_18px_45px_rgba(0,0,0,0.24),0_0_28px_rgba(59,130,246,0.06),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-xl"
+          aria-live="polite"
+        >
+          <div class="flex items-center gap-3">
+            <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-400/10 text-blue-300">
+              <i class="fa-solid fa-brain" aria-hidden="true"></i>
+            </span>
+            <div>
+              <p class="text-xs font-medium uppercase tracking-[0.16em] text-blue-300/70">Auditor IA</p>
+              <h2 class="font-semibold text-white">Diagnóstico financiero</h2>
+            </div>
+          </div>
+          <ul id="analysis-ai-content" class="mt-4 space-y-3 text-sm leading-6 text-slate-300"></ul>
+        </section>
+      </main>
+    </section>
+
+    <!-- Ahorros -->
+    <section id="savings-view" class="hidden min-h-screen pb-36">
+      <header class="sticky top-0 z-30 border-b border-white/10 bg-slate-950/75 px-5 pb-5 pt-[max(1.25rem,env(safe-area-inset-top))] shadow-[0_16px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl">
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <p class="text-xs font-medium uppercase tracking-[0.18em] text-blue-300/70">Construye tu futuro</p>
+            <h1 class="mt-1 text-2xl font-bold tracking-tight text-white">Metas de ahorro</h1>
+          </div>
+
+          <button
+            id="new-savings-goal-button"
+            type="button"
+            class="flex h-11 items-center gap-2 rounded-2xl border border-blue-300/20 bg-blue-500/10 px-4 text-sm font-semibold text-blue-300 shadow-[0_8px_24px_rgba(59,130,246,0.12)] transition hover:bg-blue-500/15 active:scale-95"
+          >
+            <i class="fa-solid fa-plus" aria-hidden="true"></i>
+            Nueva
+          </button>
+        </div>
+      </header>
+
+      <main class="px-5 pt-6">
+        <div id="savings-goals-list" class="space-y-4" aria-live="polite"></div>
+      </main>
+    </section>
+
+    <!-- Navegación -->
+    <nav
+      aria-label="Navegación principal"
+      class="fixed bottom-0 left-1/2 z-40 grid h-24 w-full max-w-lg -translate-x-1/2 grid-cols-4 border-t border-white/10 bg-slate-950/80 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-7 shadow-[0_-16px_45px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-lg"
+    >
+      <button
+        type="button"
+        data-nav-view="home"
+        aria-current="page"
+        class="flex flex-col items-center justify-end gap-1 text-blue-400"
+      >
+        <i class="fa-solid fa-house text-lg" aria-hidden="true"></i>
+        <span class="text-[11px] font-medium">Inicio</span>
+      </button>
+
+      <button
+        type="button"
+        data-nav-view="debts"
+        class="flex flex-col items-center justify-end gap-1 text-slate-500 transition"
+      >
+        <i class="fa-solid fa-file-invoice-dollar text-lg" aria-hidden="true"></i>
+        <span class="text-[11px] font-medium">Deudas</span>
+      </button>
+
+      <button
+        type="button"
+        data-nav-view="analysis"
+        class="flex flex-col items-center justify-end gap-1 text-slate-500 transition"
+      >
+        <i class="fa-solid fa-chart-pie text-lg" aria-hidden="true"></i>
+        <span class="text-[11px] font-medium">Análisis</span>
+      </button>
+
+      <button
+        type="button"
+        data-nav-view="savings"
+        class="flex flex-col items-center justify-end gap-1 text-slate-500 transition"
+      >
+        <i class="fa-solid fa-piggy-bank text-lg" aria-hidden="true"></i>
+        <span class="text-[11px] font-medium">Ahorros</span>
+      </button>
+
+      <button
+        id="transaction-fab"
+        type="button"
+        aria-label="Registrar una nueva transacción"
+        aria-controls="transaction-modal"
+        aria-expanded="false"
+        class="absolute -top-9 left-1/2 flex h-[4.5rem] w-[4.5rem] -translate-x-1/2 items-center justify-center rounded-full border border-blue-300/30 bg-gradient-to-br from-blue-600 to-blue-400 text-2xl text-white shadow-[0_8px_32px_rgba(59,130,246,0.4)] transition hover:scale-105 active:scale-95"
+      >
+        <i class="fa-solid fa-plus" aria-hidden="true"></i>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Registro de transacción -->
+  <div
+    id="transaction-modal"
+    class="invisible pointer-events-none fixed inset-0 z-50 flex items-end justify-center opacity-0 transition-opacity duration-300"
+    aria-hidden="true"
+  >
+    <button
+      type="button"
+      data-transaction-modal-close
+      aria-label="Cerrar formulario"
+      class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+    ></button>
+
+    <section
+      id="transaction-modal-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="transaction-modal-title"
+      class="pointer-events-auto relative z-20 max-h-[94vh] w-full max-w-lg translate-y-full overflow-y-auto rounded-t-[2rem] border border-b-0 border-white/15 bg-slate-900/90 px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-24px_70px_rgba(0,0,0,0.55),0_0_45px_rgba(59,130,246,0.1),inset_0_1px_0_rgba(255,255,255,0.1)] backdrop-blur-2xl transition-transform duration-300 ease-out"
+    >
+      <div class="mx-auto mb-4 h-1.5 w-12 rounded-full bg-white/15" aria-hidden="true"></div>
+
+      <div class="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <p class="text-xs font-medium uppercase tracking-[0.2em] text-blue-300/70">Registro rápido</p>
+          <h2 id="transaction-modal-title" class="mt-1 text-2xl font-bold tracking-tight text-white">
+            Nueva transacción
+          </h2>
+        </div>
+        <button
+          type="button"
+          data-transaction-modal-close
+          aria-label="Cerrar"
+          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-slate-400 transition hover:text-white"
+        >
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <form id="transaction-form" class="space-y-5">
+        <fieldset>
+          <legend class="mb-2 text-sm font-medium text-slate-300">Tipo</legend>
+          <input id="transaction-type" type="hidden" name="type" value="expense">
+
+          <div class="pointer-events-auto relative z-20 grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              data-transaction-type="income"
+              aria-pressed="false"
+              class="pointer-events-auto relative z-20 flex h-12 touch-manipulation select-none items-center justify-center gap-1.5 rounded-2xl border border-white/10 bg-white/[0.04] text-xs font-semibold text-slate-400 transition"
+            >
+              <i class="fa-solid fa-arrow-down pointer-events-none" aria-hidden="true"></i>
+              Ingreso
+            </button>
+            <button
+              type="button"
+              data-transaction-type="expense"
+              aria-pressed="true"
+              class="pointer-events-auto relative z-20 flex h-12 touch-manipulation select-none items-center justify-center gap-1.5 rounded-2xl border border-rose-400/40 bg-rose-400/10 text-xs font-semibold text-rose-300 transition"
+            >
+              <i class="fa-solid fa-arrow-up pointer-events-none" aria-hidden="true"></i>
+              Gasto
+            </button>
+            <button
+              type="button"
+              data-transaction-type="transfer"
+              aria-pressed="false"
+              class="pointer-events-auto relative z-20 flex h-12 touch-manipulation select-none items-center justify-center gap-1.5 rounded-2xl border border-white/10 bg-white/[0.04] text-xs font-semibold text-slate-400 transition"
+            >
+              <i class="fa-solid fa-right-left pointer-events-none" aria-hidden="true"></i>
+              Transferir
+            </button>
+          </div>
+        </fieldset>
+
+        <div>
+          <label for="transaction-amount" class="mb-2 block text-sm font-medium text-slate-300">Monto</label>
+          <div class="flex h-14 items-center rounded-2xl border border-white/10 bg-white/[0.05] px-4 transition focus-within:border-blue-400/50 focus-within:ring-2 focus-within:ring-blue-500/10">
+            <span class="mr-2 text-lg font-semibold text-blue-300">S/. </span>
+            <input
+              id="transaction-amount"
+              name="amount"
+              type="number"
+              inputmode="decimal"
+              min="0.01"
+              step="0.01"
+              placeholder="0.00"
+              required
+              class="min-w-0 flex-1 bg-transparent text-xl font-semibold text-white outline-none placeholder:text-slate-600"
+            >
+          </div>
+        </div>
+
+        <div id="standard-transaction-fields" class="grid grid-cols-2 gap-3">
+          <div>
+            <label id="transaction-account-label" for="transaction-account" class="mb-2 block text-sm font-medium text-slate-300">
+              Cuenta
+            </label>
+            <div class="relative">
+              <select
+                id="transaction-account"
+                name="account_id"
+                required
+                class="finax-select h-12 w-full appearance-none rounded-2xl border border-white/10 bg-white/[0.05] px-4 pr-10 text-sm text-white outline-none focus:border-blue-400/50"
+              >
+                <option value="yape">Yape</option>
+                <option value="efectivo">Efectivo</option>
+              </select>
+              <i class="fa-solid fa-chevron-down pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-500" aria-hidden="true"></i>
+            </div>
+          </div>
+
+          <div id="transaction-category-field">
+            <label for="transaction-category" class="mb-2 block text-sm font-medium text-slate-300">Categoría</label>
+            <div class="relative">
+              <select
+                id="transaction-category"
+                name="category"
+                required
+                class="finax-select h-12 w-full appearance-none rounded-2xl border border-white/10 bg-white/[0.05] px-4 pr-10 text-sm text-white outline-none focus:border-blue-400/50"
+              ></select>
+              <i class="fa-solid fa-chevron-down pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-500" aria-hidden="true"></i>
+            </div>
+          </div>
+
+        </div>
+
+        <div id="transfer-swap-field" class="hidden">
+          <input id="transfer-source-account" name="source_account_id" type="hidden" value="efectivo">
+          <input id="transfer-destination-account" name="destination_account_id" type="hidden" value="yape">
+
+          <div class="flex items-center justify-between gap-3 rounded-3xl border border-blue-400/15 bg-blue-400/[0.06] p-4 shadow-[0_12px_32px_rgba(59,130,246,0.08),inset_0_1px_0_rgba(255,255,255,0.07)]">
+            <div class="min-w-0 flex-1 text-center">
+              <p class="text-[10px] font-medium uppercase tracking-[0.16em] text-slate-500">Origen</p>
+              <p id="transfer-source-label" class="mt-1 truncate font-semibold text-white">Efectivo</p>
+            </div>
+
+            <button
+              id="swap-transfer-accounts"
+              type="button"
+              data-swap-transfer-accounts
+              aria-label="Intercambiar cuentas"
+              class="flex h-12 w-12 shrink-0 touch-manipulation items-center justify-center rounded-2xl border border-blue-400/25 bg-blue-500/15 text-blue-300 shadow-[0_8px_24px_rgba(59,130,246,0.16)] transition hover:bg-blue-500/20 active:scale-95"
+            >
+              <i class="fa-solid fa-right-left pointer-events-none transition-transform duration-300" aria-hidden="true"></i>
+            </button>
+
+            <div class="min-w-0 flex-1 text-center">
+              <p class="text-[10px] font-medium uppercase tracking-[0.16em] text-slate-500">Destino</p>
+              <p id="transfer-destination-label" class="mt-1 truncate font-semibold text-white">Yape</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="transaction-note-field">
+          <label for="transaction-note" class="mb-2 block text-sm font-medium text-slate-300">Nota</label>
+          <input
+            id="transaction-note"
+            name="note"
+            type="text"
+            maxlength="80"
+            autocomplete="off"
+            placeholder="Ej. Almuerzo con amigos"
+            class="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none placeholder:text-slate-600 focus:border-blue-400/50"
+          >
+        </div>
+
+        <p id="transaction-form-error" class="hidden text-sm text-rose-300" role="alert"></p>
+
+        <div class="grid grid-cols-[0.8fr_1.2fr] gap-3 pt-1">
+          <button
+            type="button"
+            data-transaction-modal-close
+            class="rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3.5 text-sm font-semibold text-slate-300 transition hover:bg-white/10"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            class="rounded-2xl border border-blue-300/30 bg-gradient-to-br from-blue-600 to-blue-400 px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_32px_rgba(59,130,246,0.4)] transition hover:brightness-110 active:scale-[0.98]"
+          >
+            Registrar
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <!-- Registro de deuda -->
+  <div
+    id="debt-modal"
+    class="invisible pointer-events-none fixed inset-0 z-50 flex items-end justify-center opacity-0 transition-opacity duration-300"
+    aria-hidden="true"
+  >
+    <button
+      type="button"
+      data-debt-modal-close
+      aria-label="Cerrar formulario de deuda"
+      class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+    ></button>
+
+    <section
+      id="debt-modal-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="debt-modal-title"
+      class="relative z-20 max-h-[94vh] w-full max-w-lg translate-y-full overflow-y-auto rounded-t-[2rem] border border-b-0 border-white/15 bg-slate-900/90 px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-24px_70px_rgba(0,0,0,0.55)] backdrop-blur-2xl transition-transform duration-300"
+    >
+      <div class="mx-auto mb-4 h-1.5 w-12 rounded-full bg-white/15"></div>
+      <div class="mb-6 flex items-start justify-between">
+        <div>
+          <p class="text-xs uppercase tracking-[0.2em] text-blue-300/70">Deudas y préstamos</p>
+          <h2 id="debt-modal-title" class="mt-1 text-2xl font-bold">Nuevo registro</h2>
+        </div>
+        <button
+          type="button"
+          data-debt-modal-close
+          aria-label="Cerrar"
+          class="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-slate-400"
+        >
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <form id="debt-form" class="space-y-5">
+        <div>
+          <label for="debt-type" class="mb-2 block text-sm font-medium text-slate-300">Tipo</label>
+          <select id="debt-type" name="type" class="finax-select h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm outline-none">
+            <option value="receivable">Me deben</option>
+            <option value="payable">Yo debo</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="debt-person-name" class="mb-2 block text-sm font-medium text-slate-300">Persona</label>
+          <input
+            id="debt-person-name"
+            name="personName"
+            type="text"
+            maxlength="60"
+            required
+            placeholder="Nombre"
+            class="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm outline-none placeholder:text-slate-600 focus:border-blue-400/50"
+          >
+        </div>
+
+        <div>
+          <label for="debt-amount" class="mb-2 block text-sm font-medium text-slate-300">Monto</label>
+          <div class="flex h-14 items-center rounded-2xl border border-white/10 bg-white/[0.05] px-4">
+            <span class="mr-2 font-semibold text-blue-300">S/. </span>
+            <input
+              id="debt-amount"
+              name="amount"
+              type="number"
+              inputmode="decimal"
+              min="0.01"
+              step="0.01"
+              required
+              placeholder="0.00"
+              class="min-w-0 flex-1 bg-transparent text-lg font-semibold outline-none placeholder:text-slate-600"
+            >
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="debt-date-lent" class="mb-2 block text-sm font-medium text-slate-300">Fecha inicial</label>
+            <input id="debt-date-lent" name="dateLent" type="date" required class="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-3 text-sm outline-none">
+          </div>
+          <div>
+            <label for="debt-expected-date" class="mb-2 block text-sm font-medium text-slate-300">Fecha esperada</label>
+            <input id="debt-expected-date" name="expectedPayDate" type="date" required class="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-3 text-sm outline-none">
+          </div>
+        </div>
+
+        <p id="debt-form-error" class="hidden text-sm text-rose-300" role="alert"></p>
+
+        <div class="grid grid-cols-[0.8fr_1.2fr] gap-3">
+          <button type="button" data-debt-modal-close class="rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3.5 text-sm font-semibold text-slate-300">
+            Cancelar
+          </button>
+          <button type="submit" class="rounded-2xl border border-blue-300/30 bg-gradient-to-br from-blue-600 to-blue-400 px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_32px_rgba(59,130,246,0.3)]">
+            Guardar
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <!-- Nueva meta de ahorro -->
+  <div
+    id="savings-modal"
+    class="invisible pointer-events-none fixed inset-0 z-50 flex items-end justify-center opacity-0 transition-opacity duration-300"
+    aria-hidden="true"
+  >
+    <button
+      type="button"
+      data-savings-modal-close
+      aria-label="Cerrar formulario de meta"
+      class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+    ></button>
+
+    <section
+      id="savings-modal-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="savings-modal-title"
+      class="relative z-20 max-h-[94vh] w-full max-w-lg translate-y-full overflow-y-auto rounded-t-[2rem] border border-b-0 border-white/15 bg-slate-900/90 px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-24px_70px_rgba(0,0,0,0.55),0_0_35px_rgba(59,130,246,0.08)] backdrop-blur-2xl transition-transform duration-300"
+    >
+      <div class="mx-auto mb-4 h-1.5 w-12 rounded-full bg-white/15"></div>
+      <div class="mb-6 flex items-start justify-between">
+        <div>
+          <p class="text-xs uppercase tracking-[0.2em] text-blue-300/70">Plan de ahorro</p>
+          <h2 id="savings-modal-title" class="mt-1 text-2xl font-bold">Nueva meta</h2>
+        </div>
+        <button
+          type="button"
+          data-savings-modal-close
+          aria-label="Cerrar"
+          class="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-slate-400"
+        >
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <form id="savings-goal-form" class="space-y-5">
+        <div>
+          <label for="savings-goal-name" class="mb-2 block text-sm font-medium text-slate-300">Objetivo</label>
+          <input
+            id="savings-goal-name"
+            name="goalName"
+            type="text"
+            maxlength="60"
+            required
+            autocomplete="off"
+            placeholder="Ej. Viaje a Cusco"
+            class="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm text-white outline-none placeholder:text-slate-600 focus:border-blue-400/50"
+          >
+        </div>
+
+        <div>
+          <label for="savings-target-amount" class="mb-2 block text-sm font-medium text-slate-300">Monto a alcanzar</label>
+          <div class="flex h-14 items-center rounded-2xl border border-white/10 bg-white/[0.05] px-4 focus-within:border-blue-400/50">
+            <span class="mr-2 font-semibold text-blue-300">S/. </span>
+            <input
+              id="savings-target-amount"
+              name="targetAmount"
+              type="number"
+              inputmode="decimal"
+              min="0.01"
+              step="0.01"
+              required
+              placeholder="0.00"
+              class="min-w-0 flex-1 bg-transparent text-lg font-semibold text-white outline-none placeholder:text-slate-600"
+            >
+          </div>
+        </div>
+
+        <div>
+          <label for="savings-monthly-contribution" class="mb-2 block text-sm font-medium text-slate-300">Aporte mensual estimado</label>
+          <div class="flex h-14 items-center rounded-2xl border border-white/10 bg-white/[0.05] px-4 focus-within:border-blue-400/50">
+            <span class="mr-2 font-semibold text-blue-300">S/. </span>
+            <input
+              id="savings-monthly-contribution"
+              name="monthlyContribution"
+              type="number"
+              inputmode="decimal"
+              min="0.01"
+              step="0.01"
+              required
+              placeholder="0.00"
+              class="min-w-0 flex-1 bg-transparent text-lg font-semibold text-white outline-none placeholder:text-slate-600"
+            >
+          </div>
+        </div>
+
+        <p id="savings-form-error" class="hidden text-sm text-rose-300" role="alert"></p>
+
+        <div class="grid grid-cols-[0.8fr_1.2fr] gap-3">
+          <button type="button" data-savings-modal-close class="rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3.5 text-sm font-semibold text-slate-300 transition hover:bg-white/10">
+            Cancelar
+          </button>
+          <button type="submit" class="rounded-2xl border border-blue-300/30 bg-gradient-to-br from-blue-600 to-blue-400 px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_32px_rgba(59,130,246,0.35)] transition hover:brightness-110 active:scale-[0.98]">
+            Crear meta
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <!-- Diálogo de confirmación reutilizable -->
+  <div
+    id="confirmation-dialog"
+    class="invisible pointer-events-none fixed inset-0 z-[70] flex items-center justify-center px-5 opacity-0 transition-opacity duration-200"
+    aria-hidden="true"
+  >
+    <button
+      type="button"
+      data-confirm-cancel
+      aria-label="Cancelar"
+      class="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+    ></button>
+
+    <section
+      id="confirmation-dialog-panel"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="confirmation-title"
+      aria-describedby="confirmation-message"
+      class="relative z-10 w-full max-w-sm translate-y-2 scale-95 rounded-3xl border border-white/15 bg-slate-900/90 p-5 opacity-0 shadow-[0_24px_70px_rgba(0,0,0,0.55),0_0_35px_rgba(59,130,246,0.1),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-2xl transition duration-200"
+    >
+      <div id="confirmation-icon" class="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-400/10 text-blue-300">
+        <i class="fa-solid fa-circle-question" aria-hidden="true"></i>
+      </div>
+      <h2 id="confirmation-title" class="mt-4 text-xl font-semibold text-white"></h2>
+      <p id="confirmation-message" class="mt-2 text-sm leading-6 text-slate-400"></p>
+
+      <div id="confirmation-account-field" class="mt-4 hidden">
+        <label id="confirmation-account-label" for="confirmation-account" class="mb-2 block text-sm font-medium text-slate-300">Cuenta</label>
+        <select id="confirmation-account" class="finax-select h-12 w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 text-sm outline-none">
+          <option value="yape">Yape</option>
+          <option value="efectivo">Efectivo</option>
+        </select>
+      </div>
+
+      <div id="confirmation-amount-field" class="mt-4 hidden">
+        <label id="confirmation-amount-label" for="confirmation-amount" class="mb-2 block text-sm font-medium text-slate-300">Monto</label>
+        <div class="flex h-12 items-center rounded-2xl border border-white/10 bg-white/[0.05] px-4 focus-within:border-blue-400/50">
+          <span class="mr-2 font-semibold text-blue-300">S/. </span>
+          <input
+            id="confirmation-amount"
+            type="number"
+            inputmode="decimal"
+            min="0.01"
+            step="0.01"
+            placeholder="0.00"
+            class="min-w-0 flex-1 bg-transparent text-base font-semibold text-white outline-none placeholder:text-slate-600"
+          >
+        </div>
+      </div>
+
+      <p id="confirmation-form-error" class="mt-3 hidden text-sm text-rose-300" role="alert"></p>
+
+      <div class="mt-6 grid grid-cols-2 gap-3">
+        <button type="button" data-confirm-cancel class="rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm font-semibold text-slate-300">
+          Cancelar
+        </button>
+        <button id="confirmation-accept" type="button" class="rounded-2xl border border-blue-300/20 bg-blue-500/15 px-4 py-3 text-sm font-semibold text-blue-300 transition">
+          Confirmar
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <!-- Toast global -->
+  <div
+    id="app-toast"
+    role="status"
+    aria-live="assertive"
+    class="pointer-events-none invisible fixed left-1/2 top-[max(1rem,env(safe-area-inset-top))] z-[90] flex w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-3 items-center gap-3 rounded-2xl border border-rose-400/20 bg-slate-900/90 px-4 py-3 text-rose-200 opacity-0 shadow-[0_18px_50px_rgba(0,0,0,0.5),0_0_24px_rgba(244,63,94,0.1),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl transition duration-200"
+  >
+    <span id="app-toast-icon" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-400/10 text-rose-300">
+      <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+    </span>
+    <p id="app-toast-message" class="text-sm font-medium"></p>
+  </div>
+
+  <script type="module" src="./firebase-config.js"></script>
+  <script type="module" src="./app.js?v=20260724-gemini-auth-v2"></script>
+</body>
+</html>
