@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "finax";
-const CACHE_VERSION = "20260724-gemini-auth-v3";
+const CACHE_VERSION = "20260805-bootstrap-v1";
 const APP_SHELL_CACHE = `${CACHE_PREFIX}-app-shell-${CACHE_VERSION}`;
 const RUNTIME_STATIC_CACHE = `${CACHE_PREFIX}-runtime-${CACHE_VERSION}`;
 
@@ -8,9 +8,34 @@ const APP_SHELL_URLS = [
   "./index.html",
   "./manifest.json",
   "./firebase-config.js",
-  "./app.js?v=20260724-gemini-auth-v2",
-  "./icons/icon-192.svg",
-  "./icons/icon-512.svg",
+  "./js/bootstrap.js?v=20260805-bootstrap-v1",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png",
+  "./js/core/constants.js",
+  "./js/core/dom.js",
+  "./js/core/state.js",
+  "./js/core/storage.js",
+  "./js/core/utils.js",
+  "./js/core/secrets.js",
+  "./js/ui/toast.js",
+  "./js/ui/modalHelpers.js",
+  "./js/ui/header.js",
+  "./js/ui/confirmation.js",
+  "./js/ui/bottomSheet.js",
+  "./js/services/smartParsing.js",
+  "./js/services/notifications.js",
+  "./js/services/gemini.js",
+  "./js/services/analytics.js",
+  "./js/services/audio.js",
+  "./js/services/firestore/repositories.js",
+  "./js/services/firestore/listeners.js",
+  "./js/features/transactions.js",
+  "./js/features/smartTransaction.js",
+  "./js/features/debts.js",
+  "./js/features/savings.js",
+  "./js/features/subscriptions.js",
+  "./js/features/analysis.js",
+  "./js/features/navigation.js",
 ];
 
 const OPTIONAL_CDN_ASSETS = [
